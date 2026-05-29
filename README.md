@@ -21,6 +21,16 @@ npm run prepare-addon
 
 This writes `icons/icon-48.png`, `icons/icon-96.png`, and `content/qr-overlay.js`.
 
+## Package as `.xpi`
+
+Rebuilds the content bundle and zips only the runtime files (manifest, background, `content/`, `icons/`):
+
+```bash
+npm run xpi
+```
+
+Output: **`dist/clean-url-qr-<version>.xpi`** (e.g. `dist/clean-url-qr-1.0.0.xpi`). Install via **about:addons** → gear → **Install Add-on From File…**, or sign through [addons.mozilla.org](https://addons.mozilla.org/developers/) for distribution.
+
 ## Load in Firefox (temporary)
 
 1. Open `about:debugging#/runtime/this-firefox`.
