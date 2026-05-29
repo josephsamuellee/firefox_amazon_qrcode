@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Clean URL QR",
+  "version": "1.0.0",
+  "description": "Shows an offline QR code for the current tab URL with query and fragment removed.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "cleanurlqr@browser_addon.local",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Show QR for clean URL",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  }
+}
