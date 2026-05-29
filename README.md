@@ -1,9 +1,11 @@
 # Clean URL QR (Firefox)
 
-Firefox extension that shows an **offline** black-and-white QR code for the **current tab URL** with the **query string** (`?…`) and **fragment** (`#…`) removed, so shared links drop tracking and session-like URL junk (for example long Amazon URLs become the origin + path only).
+Firefox extension that shows an **offline** black-and-white QR code for the **current tab URL** with tracking-heavy parts removed so the QR stays small and shareable.
 
 ## Behavior
 
+- **Most sites:** `?…` and `#…` are stripped (everything before `?` is kept).
+- **Amazon retail only:** product links that include a `/dp/ASIN` (or `/gp/product/ASIN`, `/gp/aw/d/ASIN`) are shortened to **`https://<host>/dp/<ASIN>`**, dropping slug segments, session path tails, and query (e.g. long `…/dp/B0…/136-…?pd_rd…` → `https://www.amazon.com/dp/B0…`). Other Amazon pages (search, home, etc.) only get `?` / `#` stripped like other sites.
 - Click the toolbar button on a normal **http** or **https** page to show a QR in the **bottom-left**.
 - The QR square uses **50% of the shorter viewport side**, capped at **560px** and with a **256px** minimum on very small windows, with **~10% white padding** on each edge around the modules.
 - The **sanitized URL** appears in **black on an opaque white strip** directly **under** the QR (same block, bottom-left), so you can confirm the exact string encoded in the code.

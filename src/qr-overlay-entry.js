@@ -5,6 +5,61 @@ const OVERLAY_ID = "clean-url-qr-overlay";
 /** @type {(() => void) | null} */
 let activeDismiss = null;
 
+/** Regional Amazon storefront hostnames (retail), excluding aws/developer noise. */
+const AMAZON_SHOP_SUFFIXES = [
+  "com",
+  "co.uk",
+  "de",
+  "fr",
+  "it",
+  "es",
+  "nl",
+  "se",
+  "pl",
+  "in",
+  "ca",
+  "com.au",
+  "com.br",
+  "com.mx",
+  "com.be",
+  "com.tr",
+  "com.co",
+  "ae",
+  "sg",
+  "co.jp",
+  "jp",
+  "co.za",
+  "cl",
+  "eg",
+  "sa",
+  "com.eg",
+];
+
+function isAmazonShopHostname(hostname) {
+  const h = hostname.toLowerCase();
+  if (h === "aws.amazon.com" || h.startsWith("aws.") || h.includes("amazonaws")) return false;
+  for (const suf of AMAZON_SHOP_SUFFIXES) {
+    const escaped = suf.replace(/\./g, "\\.");
+    const re = new RegExp(`^(?:[\\w-]+\\.)*amazon\\.${escaped}$`, "i");
+    if (re.test(h)) return true;
+  }
+  return false;
+}
+
+/** 10-char ASIN from product-style paths only. */
+function extractAmazonAsin(pathname) {
+  const patterns = [
+    /\/dp\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+    /\/gp\/product\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+    /\/gp\/aw\/d\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+  ];
+  for (const re of patterns) {
+    const m = pathname.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 function sanitizeUrl(href) {
   let u;
   try {
@@ -13,6 +68,18 @@ function sanitizeUrl(href) {
     return null;
   }
   if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+
+  if (isAmazonShopHostname(u.hostname)) {
+    const asin = extractAmazonAsin(u.pathname);
+    if (asin) {
+      try {
+        return new URL(`${u.protocol}//${u.host}/dp/${asin}`).toString();
+      } catch {
+        /* fall through */
+      }
+    }
+  }
+
   u.search = "";
   u.hash = "";
   return u.toString();
