@@ -2131,27 +2131,38 @@
     removeExisting();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let S = Math.floor(0.25 * Math.min(vw, vh));
-    const MIN = 128;
-    if (S < MIN) S = Math.min(MIN, Math.floor(Math.min(vw, vh)));
+    const short = Math.min(vw, vh);
+    const SCALE = 0.5;
+    const MAX_S = 560;
+    let S = Math.floor(SCALE * short);
+    const MIN = 256;
+    if (S < MIN) S = Math.min(MIN, Math.floor(short));
+    S = Math.min(S, MAX_S, Math.floor(short));
     const pad = Math.round(0.1 * S);
     const inner = S - 2 * pad;
     if (inner < 21) return;
     const container = document.createElement("div");
     container.id = OVERLAY_ID;
-    container.setAttribute("role", "img");
-    container.setAttribute("aria-label", "QR code for page URL without query or fragment");
+    container.setAttribute("role", "group");
+    container.setAttribute(
+      "aria-label",
+      "QR code and cleaned URL without query or fragment"
+    );
     Object.assign(container.style, {
       position: "fixed",
       left: "0",
       bottom: "0",
-      width: `${S}px`,
-      height: `${S}px`,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "stretch",
+      maxWidth: "100vw",
       zIndex: "2147483647",
       boxSizing: "border-box",
       pointerEvents: "none"
     });
     const canvas = document.createElement("canvas");
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", "QR code for cleaned page URL");
     canvas.width = S;
     canvas.height = S;
     const ctx = canvas.getContext("2d");
@@ -2159,6 +2170,23 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, S, S);
     const innerCanvas = document.createElement("canvas");
+    const urlBar = document.createElement("div");
+    urlBar.textContent = cleanUrl;
+    Object.assign(urlBar.style, {
+      backgroundColor: "#ffffff",
+      color: "#000000",
+      boxSizing: "border-box",
+      padding: "10px 12px",
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+      fontSize: "12px",
+      lineHeight: "1.4",
+      wordBreak: "break-all",
+      overflowWrap: "anywhere",
+      minWidth: `${S}px`,
+      maxWidth: "100vw",
+      width: "max-content",
+      borderTop: "1px solid #cccccc"
+    });
     import_qrcode.default.toCanvas(
       innerCanvas,
       cleanUrl,
@@ -2177,6 +2205,7 @@
       }
     );
     container.appendChild(canvas);
+    container.appendChild(urlBar);
     document.documentElement.appendChild(container);
     function onDismiss() {
       removeExisting();

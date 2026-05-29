@@ -5,7 +5,8 @@ Firefox extension that shows an **offline** black-and-white QR code for the **cu
 ## Behavior
 
 - Click the toolbar button on a normal **http** or **https** page to show a QR in the **bottom-left**.
-- The square uses **25% of the shorter viewport side** (minimum 128px) with **~10% white padding** on each edge around the code.
+- The QR square uses **50% of the shorter viewport side**, capped at **560px** and with a **256px** minimum on very small windows, with **~10% white padding** on each edge around the modules.
+- The **sanitized URL** appears in **black on an opaque white strip** directly **under** the QR (same block, bottom-left), so you can confirm the exact string encoded in the code.
 - **Click anywhere** on the page (capture phase) to dismiss; clicking through the overlay works because the overlay uses `pointer-events: none`.
 - QR encoding uses the bundled [`qrcode`](https://www.npmjs.com/package/qrcode) library — **no network** for QR generation.
 
