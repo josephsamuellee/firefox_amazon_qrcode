@@ -5,6 +5,61 @@ const OVERLAY_ID = "clean-url-qr-overlay";
 /** @type {(() => void) | null} */
 let activeDismiss = null;
 
+/** Regional Amazon storefront hostnames (retail), excluding aws/developer noise. */
+const AMAZON_SHOP_SUFFIXES = [
+  "com",
+  "co.uk",
+  "de",
+  "fr",
+  "it",
+  "es",
+  "nl",
+  "se",
+  "pl",
+  "in",
+  "ca",
+  "com.au",
+  "com.br",
+  "com.mx",
+  "com.be",
+  "com.tr",
+  "com.co",
+  "ae",
+  "sg",
+  "co.jp",
+  "jp",
+  "co.za",
+  "cl",
+  "eg",
+  "sa",
+  "com.eg",
+];
+
+function isAmazonShopHostname(hostname) {
+  const h = hostname.toLowerCase();
+  if (h === "aws.amazon.com" || h.startsWith("aws.") || h.includes("amazonaws")) return false;
+  for (const suf of AMAZON_SHOP_SUFFIXES) {
+    const escaped = suf.replace(/\./g, "\\.");
+    const re = new RegExp(`^(?:[\\w-]+\\.)*amazon\\.${escaped}$`, "i");
+    if (re.test(h)) return true;
+  }
+  return false;
+}
+
+/** 10-char ASIN from product-style paths only. */
+function extractAmazonAsin(pathname) {
+  const patterns = [
+    /\/dp\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+    /\/gp\/product\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+    /\/gp\/aw\/d\/([A-Z0-9]{10})(?:\/|[?#]|$)/i,
+  ];
+  for (const re of patterns) {
+    const m = pathname.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 function sanitizeUrl(href) {
   let u;
   try {
@@ -13,6 +68,18 @@ function sanitizeUrl(href) {
     return null;
   }
   if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+
+  if (isAmazonShopHostname(u.hostname)) {
+    const asin = extractAmazonAsin(u.pathname);
+    if (asin) {
+      try {
+        return new URL(`${u.protocol}//${u.host}/dp/${asin}`).toString();
+      } catch {
+        /* fall through */
+      }
+    }
+  }
+
   u.search = "";
   u.hash = "";
   return u.toString();
@@ -35,9 +102,14 @@ function showOverlay(cleanUrl) {
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  let S = Math.floor(0.25 * Math.min(vw, vh));
-  const MIN = 128;
-  if (S < MIN) S = Math.min(MIN, Math.floor(Math.min(vw, vh)));
+  const short = Math.min(vw, vh);
+  // ~2× original (0.25); 0.75 was too large on some setups and harder to scan.
+  const SCALE = 0.5;
+  const MAX_S = 560;
+  let S = Math.floor(SCALE * short);
+  const MIN = 256;
+  if (S < MIN) S = Math.min(MIN, Math.floor(short));
+  S = Math.min(S, MAX_S, Math.floor(short));
 
   const pad = Math.round(0.1 * S);
   const inner = S - 2 * pad;
@@ -45,20 +117,27 @@ function showOverlay(cleanUrl) {
 
   const container = document.createElement("div");
   container.id = OVERLAY_ID;
-  container.setAttribute("role", "img");
-  container.setAttribute("aria-label", "QR code for page URL without query or fragment");
+  container.setAttribute("role", "group");
+  container.setAttribute(
+    "aria-label",
+    "QR code and cleaned URL without query or fragment"
+  );
   Object.assign(container.style, {
     position: "fixed",
     left: "0",
     bottom: "0",
-    width: `${S}px`,
-    height: `${S}px`,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    maxWidth: "100vw",
     zIndex: "2147483647",
     boxSizing: "border-box",
     pointerEvents: "none",
   });
 
   const canvas = document.createElement("canvas");
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", "QR code for cleaned page URL");
   canvas.width = S;
   canvas.height = S;
   const ctx = canvas.getContext("2d");
@@ -67,6 +146,24 @@ function showOverlay(cleanUrl) {
   ctx.fillRect(0, 0, S, S);
 
   const innerCanvas = document.createElement("canvas");
+
+  const urlBar = document.createElement("div");
+  urlBar.textContent = cleanUrl;
+  Object.assign(urlBar.style, {
+    backgroundColor: "#ffffff",
+    color: "#000000",
+    boxSizing: "border-box",
+    padding: "10px 12px",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    fontSize: "12px",
+    lineHeight: "1.4",
+    wordBreak: "break-all",
+    overflowWrap: "anywhere",
+    minWidth: `${S}px`,
+    maxWidth: "100vw",
+    width: "max-content",
+    borderTop: "1px solid #cccccc",
+  });
 
   QRCode.toCanvas(
     innerCanvas,
@@ -87,6 +184,7 @@ function showOverlay(cleanUrl) {
   );
 
   container.appendChild(canvas);
+  container.appendChild(urlBar);
   document.documentElement.appendChild(container);
 
   function onDismiss() {

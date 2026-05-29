@@ -5,7 +5,8 @@
   "scripts": {
     "build": "esbuild src/qr-overlay-entry.js --bundle --platform=browser --format=iife --target=es2020 --outfile=content/qr-overlay.js",
     "icons": "node scripts/make-icons.mjs",
-    "prepare-addon": "npm run icons && npm run build"
+    "prepare-addon": "npm run icons && npm run build",
+    "xpi": "npm run build && node scripts/pack-xpi.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4"
